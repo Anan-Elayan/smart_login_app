@@ -30,77 +30,37 @@ class _LoginViewState extends State<LoginView> {
         );
   }
 
-  // final LocalAuthentication auth = LocalAuthentication();
-  // bool _canCheckBiometrics = false;
-  // String _authorized = 'Not Authorized';
-  // bool _isAuthenticating = false;
-  //
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _checkBiometrics();
-  // }
-  //
-  // Future<void> _checkBiometrics() async {
-  //   bool canCheckBiometrics = false;
-  //   bool isDeviceSupported = false;
-  //
-  //   try {
-  //     _canCheckBiometrics = await auth.canCheckBiometrics;
-  //     isDeviceSupported = await auth.isDeviceSupported();
-  //   } catch (e) {
-  //     canCheckBiometrics = false;
-  //     print("Error checking biometrics: $e");
-  //   }
-  //   setState(() {
-  //     _canCheckBiometrics = canCheckBiometrics! && isDeviceSupported;
-  //   });
-  // }
-  //
-  // Future<void> _authenticate() async {
-  //   print("Authentication started");
-  //   bool authenticated = false;
-  //   try {
-  //     setState(() {
-  //       _isAuthenticating = true;
-  //       _authorized = 'Authenticating';
-  //     });
-  //     authenticated = await auth.authenticate(
-  //       localizedReason: 'Scan your face or fingerprint to authenticate',
-  //       options: const AuthenticationOptions(
-  //         useErrorDialogs: true,
-  //         stickyAuth: true,
-  //         biometricOnly: true,
-  //       ),
-  //     );
-  //
-  //     setState(() {
-  //       _isAuthenticating = false;
-  //       _authorized = authenticated ? 'Authorized' : 'Not Authorized';
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       _isAuthenticating = false;
-  //       _authorized = 'Error: ${e.toString()}';
-  //     });
-  //     print("Authentication error: $e");
-  //     return;
-  //   }
-  //
-  //   if (!mounted) return;
-  //
-  //   setState(() {
-  //     _authorized = authenticated ? 'Authorized' : 'Not Authorized';
-  //   });
-  //
-  //   print("Authentication completed: $_authorized");
-  //
-  //   if (authenticated) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Authentication Successful!')),
-  //     );
-  //   }
-  // }
+  Future<void> _authenticate() async {
+    try {
+      bool authenticated = await auth.authenticate(
+        localizedReason: 'Scan your censors to login',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+      print("Authenticated: $authenticated ");
+      if (authenticated) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(),
+          ),
+        );
+      }
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  Future<void> _getAvailableBiometrics() async {
+    List<BiometricType> availableBiometrics =
+        await auth.getAvailableBiometrics();
+    print('List of availableBiometrics: $availableBiometrics');
+    if (!mounted) {
+      return;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,9 +69,6 @@ class _LoginViewState extends State<LoginView> {
 
     return SafeArea(
       child: Scaffold(
-        appBar: AppBar(
-          title: _supportState ? Text('supported') : Text('Not Supporter'),
-        ),
         body: SingleChildScrollView(
           child: Center(
             child: Column(
@@ -155,6 +112,12 @@ class _LoginViewState extends State<LoginView> {
                                   ),
                         ),
                       ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 150, left: 150),
+                      child: _supportState
+                          ? Text('supported Biometrics')
+                          : Text('Not Supporter Biometrics'),
                     ),
                   ],
                 ),
@@ -210,24 +173,24 @@ class _LoginViewState extends State<LoginView> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Column(
-                                              children: [
-                                                IconButton(
-                                                  onPressed: _authenticate,
-                                                  icon: const Icon(
-                                                    Icons.face_sharp,
-                                                    color: Colors.white,
-                                                    size: 40,
-                                                  ),
-                                                ),
-                                                const Text(
-                                                  "Face ID",
-                                                  style: TextStyle(
-                                                      color: Colors.white70),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(width: 40),
+                                            // Column(
+                                            //   children: [
+                                            //     IconButton(
+                                            //       onPressed: _authenticate,
+                                            //       icon: const Icon(
+                                            //         Icons.face_sharp,
+                                            //         color: Colors.white,
+                                            //         size: 40,
+                                            //       ),
+                                            //     ),
+                                            //     const Text(
+                                            //       "Face ID",
+                                            //       style: TextStyle(
+                                            //           color: Colors.white70),
+                                            //     ),
+                                            //   ],
+                                            // ),
+                                            // const SizedBox(width: 40),
                                             Column(
                                               children: [
                                                 IconButton(
@@ -250,7 +213,7 @@ class _LoginViewState extends State<LoginView> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
+                                  // const SizedBox(height: 20),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 15),
@@ -322,37 +285,5 @@ class _LoginViewState extends State<LoginView> {
         ),
       ),
     );
-  }
-
-  Future<void> _authenticate() async {
-    try {
-      bool authenticated = await auth.authenticate(
-        localizedReason: 'Scan your censors to login',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
-      );
-      print("Authenticated: $authenticated ");
-      if (authenticated) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(),
-          ),
-        );
-      }
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  Future<void> _getAvailableBiometrics() async {
-    List<BiometricType> availableBiometrics =
-        await auth.getAvailableBiometrics();
-    print('List of availableBiometrics: $availableBiometrics');
-    if (!mounted) {
-      return;
-    }
   }
 }
