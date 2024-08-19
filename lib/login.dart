@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:smart_login_app/components/custom_button.dart';
 import 'package:smart_login_app/components/custom_contanter.dart';
@@ -16,11 +18,13 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   late final LocalAuthentication auth;
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   bool _supportState = false;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     auth = LocalAuthentication();
     auth.isDeviceSupported().then(
@@ -28,19 +32,43 @@ class _LoginViewState extends State<LoginView> {
             _supportState = isSupported;
           }),
         );
+    _loadStoredCredentials();
+  }
+
+  Future<void> _loadStoredCredentials() async {
+    try {
+      String? storedEmail = await secureStorage.read(key: 'email');
+      print(storedEmail);
+      String? storedPassword = await secureStorage.read(key: 'password');
+      print(storedPassword);
+      if (storedEmail != null) {
+        emailController.text = storedEmail;
+      }
+      if (storedPassword != null) {
+        passwordController.text = storedPassword;
+      }
+    } catch (e) {
+      print("Failed to load credentials: $e");
+    }
   }
 
   Future<void> _authenticate() async {
     try {
       bool authenticated = await auth.authenticate(
-        localizedReason: 'Scan your censors to login',
+        localizedReason: 'Scan your fingerprint to login',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: true,
         ),
       );
-      print("Authenticated: $authenticated ");
       if (authenticated) {
+        // Dummy email and password for example purposes
+        String email = emailController.text;
+        String password = passwordController.text;
+
+        await secureStorage.write(key: 'email', value: email);
+        await secureStorage.write(key: 'password', value: password);
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -50,23 +78,52 @@ class _LoginViewState extends State<LoginView> {
       }
     } on PlatformException catch (e) {
       print(e);
+      Fluttertoast.showToast(
+        msg: "Authentication failed",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
     }
   }
 
-  Future<void> _getAvailableBiometrics() async {
-    List<BiometricType> availableBiometrics =
-        await auth.getAvailableBiometrics();
-    print('List of availableBiometrics: $availableBiometrics');
-    if (!mounted) {
+  Future<void> _handleLogin() async {
+    // Validate inputs
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please enter both email and password",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
       return;
+    }
+
+    // Dummy authentication logic
+    String dummyEmail = emailController.text;
+    String dummyPassword = passwordController.text;
+
+    if (emailController.text == dummyEmail &&
+        passwordController.text == dummyPassword) {
+      await secureStorage.write(key: 'email', value: emailController.text);
+      await secureStorage.write(
+          key: 'password', value: passwordController.text);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(),
+        ),
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: "Invalid email or password",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    TextEditingController emailController = TextEditingController();
-    TextEditingController passwordController = TextEditingController();
-
     return SafeArea(
       child: Scaffold(
         body: SingleChildScrollView(
@@ -116,8 +173,8 @@ class _LoginViewState extends State<LoginView> {
                     Padding(
                       padding: const EdgeInsets.only(top: 150, left: 150),
                       child: _supportState
-                          ? Text('supported Biometrics')
-                          : Text('Not Supporter Biometrics'),
+                          ? Text('Supported Biometrics')
+                          : Text('Not Supported Biometrics'),
                     ),
                   ],
                 ),
@@ -263,9 +320,7 @@ class _LoginViewState extends State<LoginView> {
                                               const Color(0xFF2d54ee),
                                           buttonBorderColor: Colors.transparent,
                                           sizeTextButton: 20,
-                                          onPress: () {
-                                            // Handle normal login
-                                          },
+                                          onPress: _handleLogin,
                                         ),
                                       ],
                                     ),

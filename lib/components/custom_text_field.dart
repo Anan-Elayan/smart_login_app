@@ -4,18 +4,21 @@ class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final bool hasError;
+  final Color textColor; // Added property for text color
 
   const CustomTextField({
     super.key,
     required this.controller,
     required this.hintText,
     this.hasError = false,
+    this.textColor = Colors.white, // Default text color
   });
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      style: TextStyle(color: textColor), // Set the text color
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.white),
